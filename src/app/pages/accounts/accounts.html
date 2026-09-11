@@ -1,0 +1,493 @@
+<div id="page-accounts" class="accounts-page page-content active p-6 relative z-10 overflow-hidden">
+    <div id="accounts-particles"></div>
+
+    <div class="flex items-start justify-between mb-4">
+        <div>
+            <h1 class="accounts-title text-4xl font-bold tracking-tight mb-2">
+                Account Management
+            </h1>
+
+            <div class="flex items-center space-x-3">
+                <div class="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-sm">
+                    <span class="text-zinc-400">Accs:</span>
+                    <span id="accounts-count" class="text-white font-semibold ml-1">{{ totalAccounts }}</span>
+                </div>
+
+                <div class="px-3 py-1 rounded-lg bg-red-950-40 border border-red-500-20 text-sm">
+                    <span class="text-red-400 font-semibold">
+                        Banned: <span id="accounts-banned-count">{{ accountInfo.blocked }}</span>
+                    </span>
+                </div>
+
+                <div class="px-3 py-1 rounded-lg bg-green-950-40 border border-green-500-20 text-sm">
+                    <span class="text-green-400 font-semibold">
+                        Farmed: <span id="accounts-farmed-count">{{ accountInfo.farmed }}</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button
+                type="button"
+                (click)="openEditAccountsListModal()"
+                class="panel-action-btn group active:scale-95 bg-zinc-900-50 border-zinc-800">
+                <i class="ph ph-note-pencil text-lg transition-transform duration-300 group-hover:rotate-12"></i>
+                <span>Edit Accounts</span>
+            </button>
+
+            <button
+                type="button"
+                (click)="openSteamGuardModal()"
+                class="panel-action-btn steam-guard-btn group active:scale-95">
+                <i class="ph-fill ph-shield-check text-lg transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"></i>
+                <span>Add Steam Guard</span>
+            </button>
+
+            <button
+                type="button"
+                (click)="openAddAccountModal()"
+                class="panel-action-btn add-account-btn group active:scale-95">
+                <i class="ph ph-user-plus text-lg transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"></i>
+                <span>Add Account</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center space-x-4">
+            <div class="text-sm text-zinc-500">
+                Total accounts:
+                <span id="accounts-total-count" class="text-white font-semibold">{{ totalAccounts }}</span>
+            </div>
+            <div class="relative">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1-2 -translate-y-1-2 text-zinc-600"></i>
+                <input
+                    type="text"
+                    (input)="handleAccountSearch($any($event.target).value)"
+                    placeholder="Search accounts..."
+                    class="bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-4 py-1-5 text-xs text-white outline-none transition-all w-48 placeholder:text-zinc-700">
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2"></div>
+    </div>
+
+    <div class="rounded-2xl border border-zinc-900 bg-black-60 backdrop-blur-xl overflow-hidden shadow-2xl">
+        <div class="accounts-grid gap-1 px-3 py-2 border-b border-zinc-900 text-10 uppercase tracking-wider text-zinc-500 font-semibold">
+            <div class="flex items-center justify-center">
+                <i class="ph ph-user-focus text-xs"></i>
+            </div>
+            <div>Login</div>
+            <div>LVL / XP</div>
+            <div class="text-center">VM</div>
+            <div class="text-center"><i class="ph-fill ph-shield-check text-10"></i> SG</div>
+            <div class="text-center">Status</div>
+            <div class="text-center">Launch</div>
+            <div class="text-center">Earned</div>
+            <div class="text-center">Link</div>
+        </div>
+
+        @if (!loadingAccounts && filteredAccounts.length === 0) {
+            <div id="accounts-empty-state" class="h-180 flex items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 empty-shine"></div>
+
+                <div class="relative text-center">
+                    <div class="mb-4 flex justify-center">
+                        <div class="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                            <i class="ph ph-users text-2xl text-zinc-600"></i>
+                        </div>
+                    </div>
+
+                    <div class="text-zinc-400 text-sm">
+                        Accounts not found
+                    </div>
+
+                    <div class="text-zinc-600 text-xs mt-1">
+                        Add the first account to get started
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (loadingAccounts && filteredAccounts.length === 0) {
+            <div class="h-180 flex items-center justify-center text-zinc-400 text-sm">
+                Loading accounts...
+            </div>
+        }
+
+        <div id="accounts-list-container">
+            @for (account of filteredAccounts; track account.login; let index = $index) {
+                <div class="accounts-grid account-row gap-1 px-3 py-2 border-b border-zinc-900 text-sm">
+                    <div class="flex items-center justify-center">
+                        <i class="ph ph-user text-zinc-500"></i>
+                    </div>
+                    <div class="text-white font-semibold">{{ account.login }}</div>
+                    <div class="text-zinc-400">LVL {{ account.level }} / {{ account.xp }} XP</div>
+                    <div class="text-center text-zinc-400">{{ account.vm || '-' }}</div>
+                    <div class="text-center" [class.text-sky-400]="account.steamGuard" [class.text-zinc-600]="!account.steamGuard">
+                        {{ account.steamGuard ? 'Yes' : 'No' }}
+                    </div>
+                    <div class="text-center" [class.text-red-400]="account.status === 'Banned'" [class.text-green-400]="account.status === 'Farmed'">
+                        {{ account.status }}
+                    </div>
+                    <div class="text-center text-zinc-400">{{ account.launch }}</div>
+                    <div class="text-center text-zinc-400">{{ account.earned }}</div>
+                    <div class="text-center">
+                        <button type="button" class="link-button" (click)="notify('Account link is not configured yet')">
+                            <i class="ph ph-link"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div id="accounts-pagination-container" class="flex items-center justify-between px-4 py-3 border-t border-zinc-900 text-xs text-zinc-400">
+            <span>
+                @if (loadingAccounts && filteredAccounts.length > 0) {
+                    Updating...
+                } @else {
+                    Page {{ totalPages === 0 ? 0 : currentPage + 1 }} of {{ totalPages }} · {{ pageSize }} per page
+                }
+            </span>
+            <div class="flex items-center gap-2">
+                <button type="button" class="panel-action-btn" (click)="goToPreviousPage()" [disabled]="currentPage <= 0">
+                    Prev
+                </button>
+                <button type="button" class="panel-action-btn" (click)="goToNextPage()" [disabled]="currentPage + 1 >= totalPages">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="vm-management-card mt-4 bg-cardBg border border-zinc-800 rounded-xl p-4">
+        <div class="vm-management-content flex items-center justify-between">
+            <div class="vm-management-title flex items-center space-x-3">
+                <div class="vm-management-icon">
+                    <i class="ph ph-desktop"></i>
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold">VM Management</h3>
+                    <p class="text-zinc-500 text-xs">Configure virtual machine endpoints</p>
+                </div>
+            </div>
+            <button
+                type="button"
+                (click)="openVmManagementModal()"
+                class="vm-manager-button active:scale-95">
+                <i class="ph ph-gear-six"></i>
+                <span>Open Manager</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div
+    id="notification-modal"
+    class="fixed top-0 left-1-2 -translate-x-1-2 mt-4 z-notification bg-zinc-900-95 border border-sapphire-500-20 text-white px-6 py-3-5 rounded-2xl shadow-2xl backdrop-blur-xl flex items-center space-x-3 transition-all duration-300 ease-out min-w-320"
+    [class.hidden]="!notificationVisible"
+    [class.opacity-0]="!notificationVisible"
+    [class.notification-hidden]="!notificationVisible">
+    <div class="w-9 h-9 rounded-xl bg-sapphire-500-15 border border-sapphire-500-20 flex items-center justify-center shrink-0">
+        <i class="ph-fill ph-database text-sapphire-400 text-lg"></i>
+    </div>
+    <span id="notification-message" class="font-medium text-sm flex-1">{{ notificationMessage }}</span>
+    <button type="button" (click)="closeNotification()" class="modal-close-button p-1">
+        <i class="ph ph-x text-lg"></i>
+    </button>
+</div>
+
+<div id="add-account-modal" class="modal-shell" [class.hidden]="!addAccountModalOpen" [class.opacity-0]="!addAccountModalOpen">
+    <div class="modal-backdrop" (click)="closeAddAccountModal()"></div>
+    <div class="modal-card max-w-md" [class.scale-95]="!addAccountModalOpen" [class.opacity-0]="!addAccountModalOpen">
+        <div class="flex items-center space-x-3 mb-6">
+            <div class="modal-icon sapphire-icon-box">
+                <i class="ph ph-user-plus text-sapphire-400 text-2xl"></i>
+            </div>
+            <div>
+                <h2 class="text-white text-xl font-bold">Add Account</h2>
+                <p class="text-zinc-500 text-sm">Enter account credentials</p>
+            </div>
+            <button type="button" (click)="closeAddAccountModal()" class="absolute top-6 right-6 modal-close-button">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="field-label">Login</label>
+                <input type="text" id="new-acc-login" [(ngModel)]="newAccount.login" placeholder="Steam login..." class="form-input sapphire-focus">
+            </div>
+            <div>
+                <label class="field-label">Email</label>
+                <input type="email" id="new-acc-email" [(ngModel)]="newAccount.email" placeholder="Linked email..." class="form-input sapphire-focus">
+            </div>
+            <div>
+                <label class="field-label">Password</label>
+                <input type="password" id="new-acc-pass" [(ngModel)]="newAccount.password" placeholder="Password..." class="form-input sapphire-focus">
+            </div>
+            <div>
+                <label class="field-label">Virtual Machine</label>
+                <div class="relative w-full group">
+                    <button id="new-acc-vm-trigger" type="button" (click)="newVmMenuOpen = !newVmMenuOpen" class="select-trigger sapphire-focus">
+                        <span id="new-acc-vm-label" [class.text-zinc-500]="!newAccount.vm">{{ newAccount.vm || 'Select VM...' }}</span>
+                        <i class="ph ph-caret-down transition-transform duration-300" [class.rotate-180]="newVmMenuOpen"></i>
+                    </button>
+                    <input type="hidden" id="new-acc-vm" [value]="newAccount.vm">
+                    <div id="new-acc-vm-menu" class="select-menu custom-scrollbar" [class.hidden]="!newVmMenuOpen">
+                        @for (vm of filteredVms; track vm) {
+                            <button type="button" class="select-option" (click)="selectNewAccountVm(vm)">{{ vm }}</button>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 pt-2">
+                <button type="button" (click)="closeAddAccountModal()" class="secondary-button">Cancel</button>
+                <button type="button" (click)="saveNewAccount()" class="primary-button sapphire-button">Add Account</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="steam-guard-modal" class="modal-shell" [class.hidden]="!steamGuardModalOpen" [class.opacity-0]="!steamGuardModalOpen">
+    <div class="modal-backdrop" (click)="closeSteamGuardModal()"></div>
+    <div class="modal-card max-w-sm" [class.scale-95]="!steamGuardModalOpen" [class.opacity-0]="!steamGuardModalOpen">
+        <div class="flex items-center space-x-3 mb-6 relative">
+            <div class="modal-icon sky-icon shrink-0">
+                <i class="ph-fill ph-shield-check text-sky-400 text-2xl"></i>
+            </div>
+            <div class="flex-1">
+                <h2 class="text-white text-xl font-bold">Steam Guard</h2>
+                <p class="text-zinc-500 text-sm">Enter verification code</p>
+            </div>
+            <button type="button" (click)="closeSteamGuardModal()" class="modal-close-button">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <div class="space-y-5">
+            <div>
+                <label class="field-label mb-2">Target Account</label>
+                <select id="steam-guard-acc-select" [(ngModel)]="selectedSteamGuardAccount" class="form-input sky-focus cursor-pointer">
+                    <option value="" disabled>Select an account...</option>
+                    @for (account of accounts; track account.login) {
+                        <option [value]="account.login">{{ account.login }}</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="field-label mb-2 text-center">Upload maFile</label>
+                <input type="file" id="steam-guard-mafile" accept=".maFile,.mafile,.json" (change)="handleSteamGuardFile($event)" class="form-input sky-focus file-input">
+            </div>
+            <p class="text-10 text-zinc-600 text-center">
+                Upload your Steam Guard .maFile to verify the account.
+            </p>
+            <div class="flex items-center space-x-3 pt-2">
+                <button type="button" (click)="closeSteamGuardModal()" class="secondary-button">Cancel</button>
+                <button type="button" (click)="submitSteamGuard()" class="primary-button sky-button active:scale-95">Verify</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="edit-accounts-list-modal" class="modal-shell" [class.hidden]="!editAccountsListModalOpen" [class.opacity-0]="!editAccountsListModalOpen">
+    <div class="modal-backdrop" (click)="closeEditAccountsListModal()"></div>
+    <div class="modal-card max-w-lg" [class.scale-95]="!editAccountsListModalOpen" [class.opacity-0]="!editAccountsListModalOpen">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="modal-icon sapphire-icon-box">
+                    <i class="ph ph-list-bullets text-sapphire-400 text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-white text-xl font-bold">Select Account to Edit</h2>
+                    <p class="text-zinc-500 text-sm">Choose an account to modify credentials</p>
+                </div>
+            </div>
+            <button type="button" (click)="closeEditAccountsListModal()" class="modal-close-button">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <div id="edit-accounts-items-list" class="space-y-3 max-h-400 overflow-y-auto pr-2 custom-scrollbar">
+            @if (accounts.length === 0) {
+                <p class="text-zinc-500 text-sm text-center">No accounts available</p>
+            }
+            @for (account of accounts; track account.login; let index = $index) {
+                <button type="button" class="edit-account-item" (click)="openEditAccountDataModal(index)">
+                    <span>{{ account.login }}</span>
+                    <i class="ph ph-pencil-simple"></i>
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+<div id="edit-account-data-modal" class="modal-shell modal-top" [class.hidden]="!editAccountDataModalOpen" [class.opacity-0]="!editAccountDataModalOpen">
+    <div class="modal-backdrop stronger" (click)="closeEditAccountDataModal()"></div>
+    <div class="modal-card max-w-md" [class.scale-95]="!editAccountDataModalOpen" [class.opacity-0]="!editAccountDataModalOpen">
+        <div class="flex items-center space-x-3 mb-6">
+            <div class="modal-icon sky-icon">
+                <i class="ph ph-pencil-simple text-sky-400 text-2xl"></i>
+            </div>
+            <div>
+                <h2 class="text-white text-xl font-bold">Edit Credentials</h2>
+                <p class="text-zinc-500 text-sm">Update login, email or password</p>
+            </div>
+            <button type="button" (click)="closeEditAccountDataModal()" class="absolute top-6 right-6 modal-close-button">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+        <input type="hidden" id="edit-acc-index" [value]="editAccountIndex">
+        <div class="space-y-4">
+            <div>
+                <label class="field-label">Login</label>
+                <input type="text" id="edit-acc-login" [(ngModel)]="editAccount.login" class="form-input sky-focus">
+            </div>
+            <div>
+                <label class="field-label">Email</label>
+                <input type="email" id="edit-acc-email" [(ngModel)]="editAccount.email" class="form-input sky-focus">
+            </div>
+            <div>
+                <label class="field-label">Password</label>
+                <input type="password" id="edit-acc-pass" [(ngModel)]="editAccount.password" placeholder="New password..." class="form-input sky-focus">
+            </div>
+            <div>
+                <label class="field-label">Virtual Machine</label>
+                <div class="relative w-full group">
+                    <button id="edit-acc-vm-trigger" type="button" (click)="editVmMenuOpen = !editVmMenuOpen" class="select-trigger sky-focus">
+                        <span id="edit-acc-vm-label">{{ editAccount.vm || 'Select VM...' }}</span>
+                        <i class="ph ph-caret-down transition-transform duration-300" [class.rotate-180]="editVmMenuOpen"></i>
+                    </button>
+                    <input type="hidden" id="edit-acc-vm" [value]="editAccount.vm">
+                    <div id="edit-acc-vm-menu" class="select-menu custom-scrollbar" [class.hidden]="!editVmMenuOpen">
+                        @for (vm of filteredVms; track vm) {
+                            <button type="button" class="select-option" (click)="selectEditAccountVm(vm)">{{ vm }}</button>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 pt-2">
+                <button type="button" (click)="closeEditAccountDataModal()" class="secondary-button">Cancel</button>
+                <button type="button" (click)="saveAccountDataEdit()" class="primary-button sky-button">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="vm-management-modal" class="modal-shell" [class.hidden]="!vmManagementModalOpen" [class.opacity-0]="!vmManagementModalOpen">
+    <div class="modal-backdrop" (click)="closeVmManagementModal()"></div>
+    <div class="modal-card max-w-md" [class.scale-95]="!vmManagementModalOpen" [class.opacity-0]="!vmManagementModalOpen">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="modal-icon sky-icon">
+                    <i class="ph ph-desktop text-sky-400 text-2xl"></i>
+                </div>
+                <div>
+                    <h2 id="vm-modal-title" class="text-white text-xl font-bold">Virtual Machines</h2>
+                    <p id="vm-modal-desc" class="text-zinc-500 text-sm">Manage available VM endpoints</p>
+                </div>
+            </div>
+            <button type="button" (click)="closeVmManagementModal()" class="modal-close-button">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="space-y-6">
+            <div id="vm-search-container" class="relative">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1-2 -translate-y-1-2 text-zinc-500"></i>
+                <input
+                    type="text"
+                    (input)="handleVmSearch($any($event.target).value)"
+                    placeholder="Search VMs..."
+                    class="form-input sky-focus pl-11">
+            </div>
+
+            <div id="vm-add-container" class="flex space-x-2">
+                <input type="text" id="new-vm-modal-name" [(ngModel)]="newVmName" placeholder="New VM name..." class="form-input sky-focus flex-1">
+                <button type="button" (click)="addVMModal()" class="vm-add-button active:scale-95">
+                    Add
+                </button>
+            </div>
+
+            <div class="pt-2">
+                <label id="vm-list-label" class="field-label mb-3">Existing Machines</label>
+                <div id="vm-modal-list" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                    @if (filteredVms.length === 0) {
+                        <div class="text-zinc-500 text-sm">No VMs found</div>
+                    }
+                    @for (vm of filteredVms; track vm) {
+                        <div class="vm-chip">
+                            <div class="vm-chip-info">
+                                <span>{{ vm }}</span>
+                                <small>{{ vmAccountCount(vm) }} accs</small>
+                            </div>
+                            <button
+                                type="button"
+                                class="vm-delete-button"
+                                title="Delete VM"
+                                (click)="openVmDeleteConfirm(vm)">
+                                <i class="ph ph-x"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="vm-delete-confirm-modal" class="modal-shell modal-top" [class.hidden]="!vmDeleteConfirmOpen" [class.opacity-0]="!vmDeleteConfirmOpen">
+    <div class="modal-backdrop stronger" (click)="closeVmDeleteConfirm()"></div>
+    <div class="modal-card max-w-lg" [class.scale-95]="!vmDeleteConfirmOpen" [class.opacity-0]="!vmDeleteConfirmOpen">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="modal-icon danger-icon">
+                    <i class="ph ph-warning text-red-400 text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-white text-xl font-bold">Delete VM?</h2>
+                    <p class="text-zinc-500 text-sm">Accounts assigned to {{ pendingDeleteVm }} will be unassigned</p>
+                </div>
+            </div>
+            <button type="button" (click)="closeVmDeleteConfirm()" class="modal-close-button">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="vm-delete-summary mb-4">
+            <span>VM</span>
+            <strong>{{ pendingDeleteVm }}</strong>
+            <span>Assigned accounts</span>
+            <strong>{{ vmAccountCount(pendingDeleteVm) }}</strong>
+        </div>
+
+        <div class="vm-delete-table-wrap custom-scrollbar">
+            <table class="vm-delete-table">
+                <thead>
+                    <tr>
+                        <th>Login</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (vmAccounts(pendingDeleteVm).length === 0) {
+                        <tr>
+                            <td colspan="3" class="empty-delete-row">No accounts assigned</td>
+                        </tr>
+                    }
+                    @for (account of vmAccounts(pendingDeleteVm); track account.login) {
+                        <tr>
+                            <td>{{ account.login }}</td>
+                            <td>{{ account.email }}</td>
+                            <td>{{ account.status }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex items-center space-x-3 pt-2">
+            <button type="button" (click)="closeVmDeleteConfirm()" class="secondary-button">Cancel</button>
+            <button type="button" (click)="confirmVmDelete()" class="primary-button danger-button">Delete VM</button>
+        </div>
+    </div>
+</div>

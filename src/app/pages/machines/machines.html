@@ -1,0 +1,143 @@
+<div class="content">
+  <div class="header-content"><h1>Machines</h1></div>
+
+  <div class="machines-left-column">
+    <div class="machines-info">
+      <div class="machines-info-box"><div class="machines-info-box-text">Total machines</div><div class="machines-info-values">{{ totalMachines }}</div></div>
+      <div class="machines-info-box"><div class="machines-info-box-text">Online</div><div class="machines-info-values" id="machines-active-machines">{{ onlineMachines }}</div></div>
+      <div class="machines-info-box"><div class="machines-info-box-text">Offline</div><div class="machines-info-values" id="machines-inactive-machines">{{ offlineMachines }}</div></div>
+      <div class="machines-info-box"><div class="machines-info-box-text">Warnings</div><div class="machines-info-values" id="machines-warnings">{{ warningMachines }}</div></div>
+    </div>
+
+    @if (!selectedLogMachine()) {
+    <div class="machines-table-content">
+      <table>
+        <thead><tr><th>Name</th><th>Status</th><th>IP Address</th><th>OS</th><th>Last Seen</th><th>CPU</th><th>RAM</th><th>Actions</th></tr></thead>
+        <tbody>
+          @for (machine of paginatedMachines; track machine.id) {
+            <tr class="machine-row" [class.selected]="selectedMachine()?.id === machine.id" (click)="selectMachine(machine)">
+              <td><strong>{{ machine.name }}</strong></td>
+              <td><span class="table-status" [class.online]="machine.status === 'online'">{{ machine.status }}</span></td>
+              <td class="machine-table-ip">{{ machine.ip }}</td><td>{{ machine.os }}</td><td>{{ machine.lastSeen }}</td>
+              <td>{{ machine.cpuUsage }}%</td><td>{{ machine.ramUsage }}%</td>
+              <td><button type="button" class="table-view-button table-delete-button" (click)="deleteMachine(machine.id); $event.stopPropagation()">Delete</button></td>
+            </tr>
+          } @empty {
+            <tr><td class="machines-empty" colspan="8">No computers found</td></tr>
+          }
+        </tbody>
+      </table>
+      @if (totalPages > 1) {
+        <div class="machines-pagination">
+          <span>Page {{ currentPage() }} of {{ totalPages }}</span>
+          <div class="machines-pagination-controls">
+            <button type="button" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)" aria-label="Previous page"><i class="ph ph-caret-left"></i></button>
+            @for (page of pageNumbers; track page) {
+              @if (page === 'ellipsis-left' || page === 'ellipsis-right') {
+                <span class="pagination-ellipsis">…</span>
+              } @else {
+                <button type="button" [class.active]="currentPage() === page" (click)="setPage(page)">{{ page }}</button>
+              }
+            }
+            <button type="button" [disabled]="currentPage() === totalPages" (click)="setPage(currentPage() + 1)" aria-label="Next page"><i class="ph ph-caret-right"></i></button>
+          </div>
+        </div>
+      }
+    </div>
+
+    }
+
+    <div class="machines-log-table">
+      <div class="machines-log-table-header">
+        @if (selectedLogMachine()) {
+          <button type="button" class="logs-back-button" (click)="showAllLogs()" aria-label="Back to all machine logs"><i class="ph ph-arrow-left"></i></button>
+          <h2>{{ selectedLogMachine() }} Logs</h2>
+        } @else {
+          <h2>Machines Log</h2>
+        }
+      </div>
+      <div class="machines-log-table-content">
+        <table>
+          <thead><tr><th>Time</th>@if (!selectedLogMachine()) {<th>Machine</th>}<th>Level</th><th>Message</th></tr></thead>
+          <tbody>
+            @for (log of paginatedLogs; track log.id) {
+              <tr><td>{{ log.time }}</td>@if (!selectedLogMachine()) {<td><strong>{{ log.machine }}</strong></td>}<td><span class="log-level" [class]="'log-level ' + log.level">{{ log.level }}</span></td><td>{{ log.message }}</td></tr>
+            } @empty {
+              <tr><td class="machines-empty" [attr.colspan]="selectedLogMachine() ? 3 : 4">No machine logs</td></tr>
+            }
+          </tbody>
+        </table>
+        @if (logTotalPages > 1) {
+          <div class="machines-pagination log-pagination">
+            <span>Page {{ logCurrentPage() }} of {{ logTotalPages }}</span>
+            <div class="machines-pagination-controls">
+              <button type="button" [disabled]="logCurrentPage() === 1" (click)="setLogPage(logCurrentPage() - 1)" aria-label="Previous log page"><i class="ph ph-caret-left"></i></button>
+              @for (page of logPageNumbers; track page) {
+                @if (page === 'ellipsis-left' || page === 'ellipsis-right') {
+                  <span class="pagination-ellipsis">…</span>
+                } @else {
+                  <button type="button" [class.active]="logCurrentPage() === page" (click)="setLogPage(page)">{{ page }}</button>
+                }
+              }
+              <button type="button" [disabled]="logCurrentPage() === logTotalPages" (click)="setLogPage(logCurrentPage() + 1)" aria-label="Next log page"><i class="ph ph-caret-right"></i></button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="machines-advanced-info">
+    <div class="machines-advanced-info-box-header">
+      <div class="machines-advanced-info-box-header-content">
+        <div class="machines-advanced-info-box-header-icon">
+          <i class="ph ph-computer-tower"></i>
+          <h2 class="machine-name">{{ selectedMachine()?.name ?? 'None' }}</h2>
+          <span class="machine-status" [class.offline]="selectedMachine()?.status === 'offline'">{{ selectedMachine()?.status ?? 'None' }}</span>
+        </div>
+        <p class="machine-ip">{{ selectedMachine()?.ip ?? 'None' }}</p>
+      </div>
+      <div class="machines-header-buttons"><button class="Overview">Overview</button><button (click)="showAllLogs()">Logs</button><button>Details</button></div>
+    </div>
+
+    <div class="machines-advanced-system-info">
+      <h1 class="advanced-system-info-h">System Information</h1>
+      <div class="advanced-system-info"><span>OS:</span><span>{{ selectedMachine()?.os ?? 'None' }}</span></div>
+      <div class="advanced-system-info"><span>CPU:</span><span>{{ selectedMachine()?.cpu ?? 'None' }}</span></div>
+      <div class="advanced-system-info"><span>RAM:</span><span>{{ selectedMachine()?.ram ?? 'None' }}</span></div>
+      <div class="advanced-system-info"><span>Disk:</span><span>{{ selectedMachine()?.disk ?? 'None' }}</span></div>
+    </div>
+
+    <div class="machines-advanced-resources">
+      <h1 class="advanced-resources-h">Resources</h1>
+      <div class="advanced-resources-box" [class]="resourceState(selectedMachine()?.cpuUsage ?? 0, 85)">
+        <div class="advanced-resources-box-row"><div class="advanced-resources-box-text">CPU Usage</div><div class="advanced-resources-box-value">{{ selectedMachine() ? selectedMachine()!.cpuUsage + '%' : 'None' }}</div></div>
+        <div class="resource-progress" role="progressbar" aria-label="CPU usage" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="selectedMachine()?.cpuUsage ?? 0"><div class="resource-progress-fill" [style.--resource-usage]="(selectedMachine()?.cpuUsage ?? 0) + '%'"></div></div>
+      </div>
+      <div class="advanced-resources-box" [class]="resourceState(selectedMachine()?.ramUsage ?? 0, 85)">
+        <div class="advanced-resources-box-row"><div class="advanced-resources-box-text">RAM Usage</div><div class="advanced-resources-box-value">{{ selectedMachine() ? selectedMachine()!.ramUsage + '%' : 'None' }}</div></div>
+        <div class="resource-progress" role="progressbar" aria-label="RAM usage" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="selectedMachine()?.ramUsage ?? 0"><div class="resource-progress-fill" [style.--resource-usage]="(selectedMachine()?.ramUsage ?? 0) + '%'"></div></div>
+      </div>
+      <div class="advanced-resources-box" [class]="resourceState(selectedMachine()?.diskUsage ?? 0, 90)">
+        <div class="advanced-resources-box-row"><div class="advanced-resources-box-text">Disk Usage</div><div class="advanced-resources-box-value">{{ selectedMachine() ? selectedMachine()!.diskUsage + '%' : 'None' }}</div></div>
+        <div class="resource-progress" role="progressbar" aria-label="Disk usage" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="selectedMachine()?.diskUsage ?? 0"><div class="resource-progress-fill" [style.--resource-usage]="(selectedMachine()?.diskUsage ?? 0) + '%'"></div></div>
+      </div>
+    </div>
+
+    <div class="machines-advanced-actions">
+      <h1 class="advanced-actions-h">Actions</h1>
+      <button class="advanced-action-button" [disabled]="!selectedMachine()" (click)="showSelectedMachineLogs()">View Logs</button>
+      <button class="advanced-action-button" [disabled]="!selectedMachine()">Remote Desktop</button>
+      <button class="advanced-action-button" id="machines-restart-button" [disabled]="!selectedMachine()">Restart</button>
+      <button class="advanced-action-button" id="machines-shutdown-button" [disabled]="!selectedMachine()">Shutdown</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+

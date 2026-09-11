@@ -1,0 +1,211 @@
+<main class="main">
+    <div>
+        <div class="items-hero">
+            <div>
+                <span class="items-kicker">Sapphire inventory</span>
+                <h1 class="last-7-days-items">Weekly drop</h1>
+            </div>
+        </div>
+
+        <div class="items-info">
+            <div class="items-info-box">
+                <div class="items-info-box-text">Total items</div>
+                <div class="items-info-values" id="items-total-items">{{ totalItems }}</div>
+            </div>
+            <div class="items-info-box">
+                <div class="items-info-box-text">Total value</div>
+                <div class="items-info-values" id="items-total-value">{{ totalValue.toFixed(2) }} &euro;</div>
+            </div>
+            <div class="items-info-box">
+                <div class="items-info-box-text">Unique items</div>
+                <div class="items-info-values" id="items-Unique-items">{{ uniqueItems }}</div>
+            </div>
+
+            <div class="items-page-selector">
+                <button type="button" (click)="togglePage()">
+                    <span id="selectPage">{{ selectedPage }}</span>
+                </button>
+            </div>
+        </div>
+
+
+        <div class="items-table-box">
+        
+
+            <div class="items-table-header">
+                <div class="items-table-title">
+                    <i class="ph ph-list-dashes"></i>
+                    <span>Dropped Items</span>
+                </div>
+
+                <div class="items-table-actions">
+                    <input
+                        type="text"
+                        id="lastdrop-search"
+                        [value]="searchQuery"
+                        [placeholder]="searchPlaceholder"
+                        (input)="updateSearch($any($event.target).value)"
+                    />
+
+                    <div class="items-sort">
+                        <button
+                            id="lastdrop-sort-trigger"
+                            class="items-sort-trigger"
+                            type="button"
+                            (click)="toggleSortMenu()"
+                        >
+                            <span id="lastdrop-sort-label">{{ selectedSort }}</span>
+                            <i class="ph ph-caret-down" [class.open]="sortMenuOpen"></i>
+                        </button>
+
+                        @if (sortMenuOpen) {
+                            <div id="lastdrop-sort-menu" class="items-sort-menu">
+                                @for (option of sortOptions; track option.value) {
+                                    <button
+                                        class="sort-option"
+                                        type="button"
+                                        [attr.data-value]="option.value"
+                                        (click)="selectSort(option.label, option.value)"
+                                    >
+                                        {{ option.label }}
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="items-table">
+                <table class="items-table-content" [class.profile-mode]="viewMode === 'profile'">
+                    <thead>
+                        <tr>
+                            <th class="item-column">
+                                <button class="table-sort-button" type="button" (click)="sortBy('name')">
+                                    <span>Item</span>
+                                    <i [class]="sortIcon('name')"></i>
+                                </button>
+                            </th>
+                            @if (viewMode === 'profile') {
+                                <th class="profile-column text-center">
+                                    <button class="table-sort-button center" type="button" (click)="sortBy('owner')">
+                                        <span>Profile</span>
+                                        <i [class]="sortIcon('owner')"></i>
+                                    </button>
+                                </th>
+                            }
+                            <th class="count-column text-center">
+                                <button class="table-sort-button center" type="button" (click)="sortBy('count')">
+                                    <span>Count</span>
+                                    <i [class]="sortIcon('count')"></i>
+                                </button>
+                            </th>
+                            <th class="price-column text-right">
+                                <button class="table-sort-button right" type="button" (click)="sortBy('price')">
+                                    <span>Price</span>
+                                    <i [class]="sortIcon('price')"></i>
+                                </button>
+                            </th>
+                            <th class="total-column text-right">
+                                <button class="table-sort-button right" type="button" (click)="sortBy('total')">
+                                    <span>Total</span>
+                                    <i [class]="sortIcon('total')"></i>
+                                </button>
+                            </th>
+                            <th class="rarity-column text-center">
+                                <button class="table-sort-button center" type="button" (click)="sortBy('rarity')">
+                                    <span>Rarity</span>
+                                    <i [class]="sortIcon('rarity')"></i>
+                                </button>
+                            </th>
+                            <th class="actions-column text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="items-table-body" id="lastdrop-table-body">
+                        @for (item of pagedItems; track item.name + item.owner + item.rarity) {
+                            <tr>
+                                <td>
+                                    <div class="item-name-cell">
+                                        <img
+                                            class="item-image"
+                                            [src]="item.imageUrl || placeholderImageUrl"
+                                            [alt]="item.name"
+                                        >
+                                        <span>{{ item.name }}</span>
+                                    </div>
+                                </td>
+                                @if (viewMode === 'profile') {
+                                    <td class="profile-column text-center">
+                                        <span class="profile-name">{{ item.owner }}</span>
+                                    </td>
+                                }
+                                <td class="count-column text-center">{{ item.count }}</td>
+                                <td class="price-column text-right">{{ item.price.toFixed(2) }} &euro;</td>
+                                <td class="total-column text-right">{{ itemTotal(item).toFixed(2) }} &euro;</td>
+                                <td class="rarity-column text-center">{{ item.rarity }}</td>
+                                <td class="actions-column text-center">
+                                    <a
+                                        class="market-link"
+                                        [href]="marketUrl(item)"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (totalRows > pageSize) {
+                <div class="items-pagination">
+                    <span class="items-pagination-info">
+                        Showing {{ pageStart }}-{{ pageEnd }} of {{ totalRows }}
+                    </span>
+
+                    <div class="items-pagination-controls">
+                        <button
+                            class="items-pagination-button"
+                            type="button"
+                            [disabled]="currentPage === 1"
+                            (click)="previousPage()"
+                        >
+                            <i class="ph ph-caret-left"></i>
+                        </button>
+
+                        <span class="items-pagination-page">
+                            Page {{ currentPage }} of {{ totalPages }}
+                        </span>
+
+                        <button
+                            class="items-pagination-button"
+                            type="button"
+                            [disabled]="currentPage === totalPages"
+                            (click)="nextPage()"
+                        >
+                            <i class="ph ph-caret-right"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (loading) {
+                <div id="lastdrop-empty" class="items-empty">
+                    <i class="ph ph-package"></i>
+                    <p>Loading weekly drop...</p>
+                    <span>Drop week resets every Wednesday at 04:00</span>
+                </div>
+            }
+
+            @if (!loading && totalRows === 0) {
+                <div id="lastdrop-empty" class="items-empty">
+                    <i class="ph ph-package"></i>
+                    <p>No items dropped yet</p>
+                    <span>Only items received since Wednesday 04:00 are shown</span>
+                </div>
+            }
+        </div>
+    </div>
+</main>

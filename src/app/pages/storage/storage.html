@@ -1,0 +1,158 @@
+<main class="storage-page">
+    <div class="storage-header">
+        <div><span class="storage-kicker">Sapphire storage</span><h1 class="storage-title">Storage Management</h1></div>
+        <button class="storage-action-btn storage-action-primary" type="button" (click)="openAddStorage()"><i class="ph ph-plus"></i><span>Add Stash Profile</span></button>
+    </div>
+
+    @if (notification) { <div class="storage-notification"><i class="ph ph-check-circle"></i><span>{{ notification }}</span></div> }
+
+    <div class="storage-info">
+        <div class="storage-info-item"><span class="storage-label">Stash accounts</span><strong>{{ storageCount }}</strong></div>
+        <div class="storage-info-item storage-info-active"><span class="storage-label">Active stash</span><strong>{{ activeStorageCount }}</strong></div>
+        <div class="storage-info-item storage-info-banned"><span class="storage-label">Banned stash</span><strong>{{ bannedCount }}</strong></div>
+        <div class="storage-info-item"><span class="storage-label">Linked farm accounts</span><strong>{{ linkedFarmCount }}</strong></div>
+        <div class="storage-info-item"><span class="storage-label">Free farm accounts</span><strong>{{ unlinkedFarmCount }}</strong></div>
+    </div>
+
+    <div class="storage-table-box">
+        <div class="storage-table-header"><div class="storage-table-title"><i class="ph ph-list-dashes"></i><span>Stash Account List</span></div></div>
+        <div class="storage-table-wrap">
+            <table class="storage-table">
+                <thead><tr><th>Stash account</th><th>Status</th><th>Linked farm accounts / VM</th><th>Last changed</th><th>Actions</th></tr></thead>
+                <tbody>
+                    @for (storage of storageAccounts; track storage.login) {
+                        <tr>
+                            <td><div class="storage-account"><i class="ph ph-vault"></i><span>{{ storage.login }}</span></div></td>
+                            <td><span class="status-pill" [class.status-banned]="storage.status === 'Banned'">{{ storage.status }}</span></td>
+                            <td><div class="linked-preview">
+                                @for (login of storage.linkedFarmAccounts; track login) {
+                                    <span class="account-vm-chip"><strong>{{ login }}</strong><small><i class="ph ph-desktop"></i>{{ farmAccount(login)?.vm || 'Unknown VM' }}</small></span>
+                                }
+                                @if (storage.linkedFarmAccounts.length === 0) { <em>No farm accounts linked</em> }
+                            </div></td>
+                            <td class="last-activity">{{ storage.lastActivity }}</td>
+                            <td><div class="table-actions"><button class="table-btn storage-manage-btn" type="button" (click)="openStorage(storage)"><i class="ph ph-sliders-horizontal"></i><span>Manage</span></button><button class="table-btn steamguard-btn" [class.attached]="storage.hasSteamGuard" type="button" (click)="openSteamGuardStorage(storage)"><i class="ph ph-shield-check"></i><span>{{ storage.hasSteamGuard ? 'Guard added' : 'Steam Guard' }}</span></button><button class="table-btn table-delete-btn" type="button" (click)="askDeleteStorage(storage)"><i class="ph ph-trash"></i> Delete</button></div></td>
+                        </tr>
+                    } @empty {
+                        <tr><td colspan="5" class="storage-empty-row"><i class="ph ph-vault"></i><strong>No stash profiles yet</strong><span>Use Add Stash Profile to create the first one.</span></td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+
+@if (steamGuardModalOpen && selectedSteamGuardStorage) {
+    <div class="storage-modal steamguard-storage-modal">
+        <div class="storage-modal-backdrop" (click)="closeSteamGuardStorage()"></div>
+        <div class="storage-modal-card steamguard-storage-card">
+            <div class="storage-modal-header">
+                <div><span class="storage-kicker">Stash security</span><h2>Steam Guard &amp; Trade Token</h2><p>Upload a .maFile once, or save only a new trade token for {{ selectedSteamGuardStorage.login }}.</p></div>
+                <button class="modal-close" type="button" (click)="closeSteamGuardStorage()"><i class="ph ph-x"></i></button>
+            </div>
+            <label class="steamguard-file-drop">
+                <input type="file" accept=".maFile,.json,application/json" (change)="selectSteamGuardFile($event)">
+                <i class="ph ph-file-arrow-up"></i>
+                <strong>{{ selectedSteamGuardFile?.name || 'Choose Steam Guard .maFile' }}</strong>
+                <span>The secrets will be saved for this stash profile.</span>
+            </label>
+            <label class="steamguard-token-field"><span>Trade token</span><input type="text" autocomplete="off" [(ngModel)]="steamGuardTradeToken" placeholder="For example: rDF0fwHs"><small>Paste only the token. A complete Steam trade URL is also accepted.</small></label>
+            <div class="storage-add-footer">
+                <button class="storage-cancel-btn" type="button" (click)="closeSteamGuardStorage()">Cancel</button>
+                <button class="storage-create-btn" type="button" [disabled]="(!selectedSteamGuardFile && !steamGuardTradeToken.trim()) || saving" (click)="uploadStashSteamGuard()"><i class="ph ph-shield-check"></i>{{ saving ? 'Saving...' : (selectedSteamGuardFile ? 'Add Steam Guard' : 'Save trade token') }}</button>
+            </div>
+        </div>
+    </div>
+}
+@if (addStorageOpen) {
+    <div class="storage-modal">
+        <div class="storage-modal-backdrop" (click)="closeAddStorage()"></div>
+        <div class="storage-modal-card storage-add-card">
+            <div class="storage-modal-header"><div><span class="storage-kicker">New storage account</span><h2>Add Stash Profile</h2><p>Enter the stash login and select free accounts from your virtual machines.</p></div><button class="modal-close" type="button" (click)="closeAddStorage()"><i class="ph ph-x"></i></button></div>
+            <div class="storage-add-form stash-credentials-form">
+                <label><span>Stash login</span><input type="text" name="new_stash_account_login" autocomplete="off" autocapitalize="none" spellcheck="false" [(ngModel)]="newStorageLogin" placeholder="For example: stash_main"></label>
+                <label><span>Email</span><input type="text" name="new_stash_contact_email" autocomplete="off" inputmode="email" autocapitalize="none" spellcheck="false" [(ngModel)]="newStorageEmail" placeholder="stash@example.com"></label>
+                <label><span>Password</span><input type="password" name="new_stash_steam_password" autocomplete="new-password" [(ngModel)]="newStoragePassword" placeholder="Steam password"></label>
+                <label><span>Status</span><select [(ngModel)]="newStorageStatus"><option value="Not Banned">Not Banned</option><option value="Banned">Banned</option></select></label>
+            </div>
+            <div class="new-farm-section">
+                <div class="new-farm-heading"><div><h3>Available farm accounts</h3><p>Once selected, an account disappears from every other stash.</p></div><strong>{{ newStorageFarmAccounts.size }} selected</strong></div>
+                <div class="storage-account-search"><i class="ph ph-magnifying-glass"></i><input [(ngModel)]="accountSearch" placeholder="Search by account or VM..."></div>
+                <div class="new-farm-list">
+                    @if (loadingFarmAccounts) { <p class="empty-text">Loading accounts...</p> }
+                    @for (account of assignableFarmAccounts; track account.profileId) {
+                        <button class="new-farm-option" [class.selected]="isNewFarmSelected(account.login)" [class.option-banned]="account.status === 'Banned'" [disabled]="account.status === 'Banned'" type="button" (click)="toggleNewFarmAccount(account)">
+                            <i class="ph" [class.ph-check-circle]="isNewFarmSelected(account.login)" [class.ph-circle]="!isNewFarmSelected(account.login)"></i>
+                            <span><strong>{{ account.login }}</strong><small><i class="ph ph-desktop"></i>{{ account.vm }} · {{ account.status }}</small></span>
+                        </button>
+                    } @empty {
+                        @if (!loadingFarmAccounts) { <p class="empty-text farm-empty">No free farm accounts found.</p> }
+                    }
+                </div>
+            </div>
+            @if (addStorageError) { <div class="storage-form-error"><i class="ph ph-warning-circle"></i>{{ addStorageError }}</div> }
+            <div class="storage-add-footer"><button class="storage-cancel-btn" type="button" (click)="closeAddStorage()">Cancel</button><button class="storage-create-btn" type="button" [disabled]="saving" (click)="createStorage()"><i class="ph ph-plus"></i>{{ saving ? 'Saving...' : 'Create Profile' }}</button></div>
+        </div>
+    </div>
+}
+
+@if (selectedStorage) {
+    <div class="storage-modal">
+        <div class="storage-modal-backdrop" (click)="closeStorage()"></div>
+        <div class="storage-modal-card storage-manage-card storage-add-card">
+            <div class="storage-modal-header">
+                <div><span class="storage-kicker">Storage account</span><h2>Manage Stash Profile</h2><p>Update the profile and select its farm accounts.</p></div>
+                <button class="modal-close" type="button" (click)="closeStorage()"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="storage-add-form">
+                <label><span>Stash login</span><input class="manage-readonly-input" type="text" [value]="selectedStorage.login" readonly></label>
+                <label><span>Status</span><select [(ngModel)]="manageStorageStatus"><option value="Not Banned">Not Banned</option><option value="Banned">Banned</option></select></label>
+            </div>
+
+            <div class="new-farm-section manage-farm-section">
+                <div class="new-farm-heading"><div><h3>Available farm accounts</h3><p>Select accounts by login or virtual machine.</p></div><div class="manage-counts"><strong>{{ manageFarmAccounts.size }} selected</strong><span>{{ manageableFarmAccounts.length }} shown · {{ farmAccounts.length }} total</span></div></div>
+                <div class="storage-account-search"><i class="ph ph-magnifying-glass"></i><input [(ngModel)]="manageAccountSearch" placeholder="Search by account or VM..."></div>
+                <div class="manage-account-columns">
+                    <section class="manage-account-group manage-added-group">
+                        <div class="manage-group-title"><span><i class="ph ph-check-circle"></i>Added accounts</span><strong>{{ addedManageFarmAccounts.length }}</strong></div>
+                        <div class="manage-group-list">
+                            @for (account of addedManageFarmAccounts; track account.profileId) {
+                                <button class="new-farm-option selected" type="button" (click)="toggleManageFarmAccount(account)">
+                                    <i class="ph ph-minus-circle"></i>
+                                    <span><strong>{{ account.login }}</strong><small><i class="ph ph-desktop"></i>{{ account.vm }} · {{ account.status }}</small></span>
+                                </button>
+                            } @empty { <p class="empty-text manage-empty">No accounts added.</p> }
+                        </div>
+                    </section>
+
+                    <section class="manage-account-group">
+                        <div class="manage-group-title"><span><i class="ph ph-plus-circle"></i>Not added accounts</span><strong>{{ notAddedManageFarmAccounts.length }}</strong></div>
+                        <div class="manage-group-list">
+                            @for (account of notAddedManageFarmAccounts; track account.profileId) {
+                                <button class="new-farm-option" type="button" (click)="toggleManageFarmAccount(account)">
+                                    <i class="ph ph-plus-circle"></i>
+                                    <span><strong>{{ account.login }}</strong><small><i class="ph ph-desktop"></i>{{ account.vm }} · {{ account.status }}</small></span>
+                                </button>
+                            } @empty { <p class="empty-text manage-empty">No free accounts found.</p> }
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="storage-add-footer manage-actions">
+                <button class="table-btn table-delete-btn manage-delete-btn" type="button" (click)="askDeleteStorage(selectedStorage)"><i class="ph ph-trash"></i>Delete profile</button>
+                <span class="manage-action-spacer"></span>
+                <button class="storage-cancel-btn" type="button" (click)="closeStorage()">Cancel</button>
+                <button class="storage-create-btn" type="button" [disabled]="saving" (click)="saveManagedAccounts()"><i class="ph ph-check"></i>{{ saving ? 'Saving...' : 'Save changes' }}</button>
+            </div>
+        </div>
+    </div>
+}
+@if (pendingDeleteStorage) {
+    <div class="storage-modal delete-confirm-modal">
+        <div class="storage-modal-backdrop" (click)="cancelDeleteStorage()"></div>
+        <div class="storage-modal-card delete-confirm-card"><div class="delete-confirm-icon"><i class="ph ph-trash"></i></div><h2>Delete {{ pendingDeleteStorage.login }}?</h2><p>The stash profile will be deleted. Its <strong>{{ pendingDeleteStorage.linkedFarmAccounts.length }}</strong> farm accounts will become available for another stash.</p><div class="storage-add-footer"><button class="storage-cancel-btn" type="button" (click)="cancelDeleteStorage()">Cancel</button><button class="confirm-delete-btn" type="button" (click)="confirmDeleteStorage()">Delete and release accounts</button></div></div>
+    </div>
+}

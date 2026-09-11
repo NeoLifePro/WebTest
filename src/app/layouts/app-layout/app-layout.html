@@ -1,0 +1,59 @@
+<main class="main">
+  <aside class="aside">
+    <div class="aside-content">
+      <a class="aside-logo" routerLink="/home" aria-label="Go to home">
+        <img class="sapphire-icon" src="/sapphire_icon_clean_512.png" alt="Sapphire">
+
+        <div class="logo-text">
+          <span>NXPANEL</span>
+          <span>Sapphire Edition</span>
+        </div>
+      </a>
+
+      <div class="aside-buttons">
+        <a routerLink="/app/items" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-button">
+          <i class="ph ph-package"></i>
+          <span>Items</span>
+        </a>
+
+        <a routerLink="/app/accounts" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-button">
+          <i class="ph ph-users-three"></i>
+          <span>Accounts</span>
+        </a>
+        
+        <a routerLink="/app/storage" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-button">
+          <i class="ph ph-database"></i>
+          <span>Storage</span>
+        </a>
+        
+        <a routerLink="/app/machines" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-button">
+          <i class="ph ph-computer-tower"></i>
+          <span>Machines</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="aside-user">
+      <div class="user-card">
+        <div class="user-avatar">
+          <i class="ph ph-user"></i>
+        </div>
+        <div class="user-meta">
+          @if (activeUser) {
+            <span class="user-name">{{ activeUser.name }}</span>
+            <span class="user-role" [class]="'user-role role-' + activeUser.role">{{ activeUser.role }}</span>
+          }
+        </div>
+      </div>
+
+      <button class="logout-button" type="button" (click)="logout()">
+        <i class="ph ph-sign-out"></i>
+        <span>Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <section class="page-content">
+    <router-outlet></router-outlet>
+  </section>
+</main>

@@ -1,0 +1,45 @@
+<main class="main">
+    <header>
+        <div class="nav">
+            <div class="left">
+                <a class="nav-item" routerLink="/home">Home</a>
+
+                @if (isLoggedIn) {
+                    <div class="nav-dropdown">
+                        <button class="nav-item dropdown-trigger" type="button">
+                            Dashboard
+                        </button>
+
+                        <div class="dropdown-menu">
+                            <a routerLink="/app/items">Items</a>
+                            <a routerLink="/app/accounts">Accounts</a>
+                            <a routerLink="/app/storage">Storage</a>
+                            <a routerLink="/app/machines">Machines</a>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="right">
+                @if (!isLoggedIn) {
+                    <a class="nav-item" routerLink="/auth">Login</a>
+                } @else {
+                    <div class="nav-dropdown user-dropdown">
+                        <button class="nav-item dropdown-trigger user-trigger" type="button">
+                            <span class="user-avatar">{{ activeUser?.name?.charAt(0)?.toUpperCase() }}</span>
+                            <span>{{ activeUser?.name }}</span>
+                        </button>
+
+                        <div class="dropdown-menu user-menu">
+                            <button class="dropdown-action logout-nav" type="button" (click)="logout()">Logout</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </header>
+
+    <section class="page-content">
+        <router-outlet></router-outlet>
+    </section>
+</main>

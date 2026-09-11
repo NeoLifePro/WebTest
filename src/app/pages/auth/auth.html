@@ -1,0 +1,84 @@
+<main class="auth-page">
+    <section class="auth-box" [class.register-mode]="isRegisterMode">
+        <div class="auth-header">
+            <p class="eyebrow">NXPANEL access</p>
+            <h1>{{ isRegisterMode ? 'Register' : 'Login' }}</h1>
+            <p>
+                {{ isRegisterMode
+                    ? 'Create a closed project account with invite access.'
+                    : 'Sign in to continue to the NXPANEL dashboard.' }}
+            </p>
+        </div>
+
+        <div class="auth-switch" aria-label="Auth mode">
+            <button
+                type="button"
+                [class.active]="!isRegisterMode"
+                (click)="showLogin()">
+                Login
+            </button>
+            <button
+                type="button"
+                [class.active]="isRegisterMode"
+                (click)="showRegister()">
+                Register
+            </button>
+        </div>
+
+        <div class="forms-shell">
+            <form
+                class="auth-form auth-panel login-panel"
+                [class.active]="!isRegisterMode"
+                [attr.aria-hidden]="isRegisterMode"
+                (ngSubmit)="submitLogin()">
+                <label>
+                    <span>Login or email</span>
+                    <input type="text" name="login" autocomplete="username" [(ngModel)]="loginForm.login" [disabled]="isRegisterMode || loading">
+                </label>
+
+                <label>
+                    <span>Password</span>
+                    <input type="password" name="password" autocomplete="current-password" [(ngModel)]="loginForm.password" [disabled]="isRegisterMode || loading">
+                </label>
+
+                <button class="submit-button" type="submit" [disabled]="isRegisterMode || loading">
+                    {{ loading && !isRegisterMode ? 'Logging in...' : 'Login' }}
+                </button>
+            </form>
+
+            <form
+                class="auth-form auth-panel register-panel"
+                [class.active]="isRegisterMode"
+                [attr.aria-hidden]="!isRegisterMode"
+                (ngSubmit)="submitRegister()">
+                <label>
+                    <span>Login</span>
+                    <input type="text" name="register-login" autocomplete="username" [(ngModel)]="registerForm.username" [disabled]="!isRegisterMode || loading">
+                </label>
+
+                <label>
+                    <span>Email</span>
+                    <input type="email" name="email" autocomplete="email" [(ngModel)]="registerForm.email" [disabled]="!isRegisterMode || loading">
+                </label>
+
+                <label>
+                    <span>Password</span>
+                    <input type="password" name="register-password" autocomplete="new-password" [(ngModel)]="registerForm.password" [disabled]="!isRegisterMode || loading">
+                </label>
+
+                <label>
+                    <span>Invite-code</span>
+                    <input type="text" name="invite-code" autocomplete="off" [(ngModel)]="registerForm.inviteCode" [disabled]="!isRegisterMode || loading">
+                </label>
+
+                <button class="submit-button" type="submit" [disabled]="!isRegisterMode || loading">
+                    {{ loading && isRegisterMode ? 'Creating...' : 'Create account' }}
+                </button>
+            </form>
+        </div>
+
+        @if (errorMessage) {
+            <p class="auth-error">{{ errorMessage }}</p>
+        }
+    </section>
+</main>
